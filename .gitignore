@@ -1,0 +1,6 @@
+.DS_Store
+*.swp
+/runs/
+/sample-runs/*.local.*
+__pycache__/
+.venv/

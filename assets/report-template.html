@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LinkedIn Profile Report — {{PROFILE_NAME}}</title>
+  <style>
+    /* ── Reset & Base ────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #1d2226;
+      background: #f3f2ef;
+      padding: 24px 16px 64px;
+    }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+
+    /* ── Typography ──────────────────────────────────────────── */
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #0a66c2;
+      margin-bottom: 4px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0a66c2;
+      border-bottom: 2px solid #e8e8e8;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1d2226;
+      margin: 20px 0 10px;
+    }
+
+    p { margin-bottom: 10px; }
+
+    /* ── Header block ────────────────────────────────────────── */
+    .report-header {
+      background: #0a66c2;
+      color: #fff;
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+
+    .report-header h1 { color: #fff; }
+
+    .report-meta {
+      font-size: .88rem;
+      opacity: .85;
+      margin-top: 6px;
+    }
+
+    /* ── Score Badges ────────────────────────────────────────── */
+    /* Per-section (0–10) */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 28px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: .82rem;
+      padding: 0 10px;
+      letter-spacing: .02em;
+    }
+
+    .badge-green  { background: #d4edda; color: #155724; }  /* score ≥ 8 */
+    .badge-amber  { background: #fff3cd; color: #856404; }  /* score 5–7 */
+    .badge-red    { background: #f8d7da; color: #721c24; }  /* score < 5 */
+
+    /* Overall score (out of 100) */
+    .overall-score {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .overall-score .denom { font-size: 1.1rem; font-weight: 400; opacity: .65; }
+    .overall-score .arrow { font-size: 1.4rem; font-weight: 400; color: #767676; }
+
+    .score-green  { color: #198754; }   /* ≥ 75 */
+    .score-amber  { color: #b45309; }   /* 50–74 */
+    .score-red    { color: #dc3545; }   /* < 50 */
+
+    .overall-rating {
+      font-size: .95rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 14px;
+    }
+
+    /* ── Recruiter Scan ──────────────────────────────────────── */
+    .scan-verdict {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: .9rem;
+      margin-top: 4px;
+    }
+    .scan-click  { background: #d4edda; color: #155724; }
+    .scan-skip   { background: #f8d7da; color: #721c24; }
+
+    /* ── Classification grid ─────────────────────────────────── */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .meta-card {
+      background: #f8f9fa;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+
+    .meta-card .label {
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #767676;
+      margin-bottom: 4px;
+    }
+
+    .meta-card .value {
+      font-size: .95rem;
+      font-weight: 600;
+      color: #1d2226;
+    }
+
+    /* ── Scorecard table ─────────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #f3f2ef;
+      color: #444;
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      border-bottom: 2px solid #e8e8e8;
+    }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    /* ── Current / Optimized cards ───────────────────────────── */
+    .rewrite-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      border-radius: 6px;
+      padding: 16px;
+      border: 1px solid #e8e8e8;
+    }
+
+    .card-current {
+      background: #fafafa;
+      border-color: #ddd;
+    }
+
+    .card-optimized {
+      background: #f0f7ff;
+      border-color: #b3d4f5;
+    }
+
+    .card-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card-current .card-label   { color: #767676; }
+    .card-optimized .card-label { color: #0a66c2; }
+
+    .card pre {
+      font-family: "SF Mono", "Cascadia Code", "Consolas", "Menlo", monospace;
+      font-size: .82rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin: 0;
+    }
+
+    .card-current pre   { background: #fff; }
+    .card-optimized pre { background: #e8f2ff; border-color: #b3d4f5; }
+
+    /* ── Experience blocks ───────────────────────────────────── */
+    .experience-block {
+      border-left: 3px solid #0a66c2;
+      padding-left: 18px;
+      margin-bottom: 28px;
+    }
+
+    /* ── Checklist ───────────────────────────────────────────── */
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: .9rem;
+    }
+
+    .checklist li:last-child { border-bottom: none; }
+
+    .checklist li::before {
+      content: "☐";
+      font-size: 1.1rem;
+      color: #0a66c2;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Not Assessable notice ───────────────────────────────── */
+    .not-assessable {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 16px 18px;
+      font-size: .88rem;
+      color: #5d4037;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .report-footer {
+      text-align: center;
+      font-size: .78rem;
+      color: #767676;
+      margin-top: 32px;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      section { padding: 20px 18px; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .rewrite-pair { grid-template-columns: 1fr; }
+    }
+
+    /* ── Print ───────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; padding: 0; font-size: 13px; }
+      section, .report-header {
+        box-shadow: none;
+        border: 1px solid #e0e0e0;
+        break-inside: avoid;
+      }
+      .rewrite-pair { grid-template-columns: 1fr 1fr; }
+      h2 { color: #1d2226; }
+      .report-header { background: #1d2226; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ①  HEADER -->
+    <div class="report-header">
+      <h1>{{PROFILE_NAME}}</h1>
+      <div class="report-meta">
+        Goal: <strong>{{GOAL_MODE}}</strong> &nbsp;·&nbsp; Report date: <strong>{{REPORT_DATE}}</strong>
+      </div>
+    </div>
+
+    <!-- ②  EXECUTIVE SUMMARY -->
+    <section>
+      <h2>Executive Summary</h2>
+
+      <div class="overall-score">
+        <span class="{{SCORE_CLASS_BEFORE}}">{{OVERALL_SCORE_BEFORE}}</span>
+        <span class="arrow">&rarr;</span>
+        <span class="{{SCORE_CLASS_AFTER}}">{{OVERALL_SCORE_AFTER}}</span><span class="denom">/100 projected</span>
+      </div>
+      <div class="overall-rating">{{OVERALL_RATING}}</div>
+
+      <p>{{EXEC_SUMMARY}}</p>
+
+      <p>
+        <strong>Recruiter 6-second scan:</strong><br />
+        <span class="scan-verdict {{SCAN_CLASS}}">{{RECRUITER_SCAN_VERDICT}}</span>
+      </p>
+    </section>
+
+    <!-- ③  CLASSIFICATION -->
+    <section>
+      <h2>Classification</h2>
+      <div class="meta-grid">
+        <div class="meta-card">
+          <div class="label">Industry</div>
+          <div class="value">{{INDUSTRY}}</div>
+        </div>
+        <div class="meta-card">
+          <div class="label">Profile Type</div>
+          <div class="value">{{PROFILE_TYPE}}</div>
+        </div>
+        <div class="meta-card">
+          <div class="label">Target Audience</div>
+          <div class="value">{{TARGET_AUDIENCE}}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④  SECTION SCORECARD -->
+    <section>
+      <h2>Section Scorecard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>Now</th>
+            <th>Projected</th>
+            <th>Status</th>
+            <th>Top Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{SCORECARD_ROWS}}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑤  REWRITES -->
+    <section>
+      <h2>Rewrites</h2>
+
+      <!-- Headline -->
+      <h3>Headline</h3>
+      <div class="rewrite-pair">
+        <div class="card card-current">
+          <div class="card-label">Current</div>
+          <pre>{{HEADLINE_CURRENT}}</pre>
+        </div>
+        <div class="card card-optimized">
+          <div class="card-label">Optimized</div>
+          <pre>{{HEADLINE_OPTIMIZED}}</pre>
+        </div>
+      </div>
+
+      <!-- About -->
+      <h3>About</h3>
+      <div class="rewrite-pair">
+        <div class="card card-current">
+          <div class="card-label">Current</div>
+          <pre>{{ABOUT_CURRENT}}</pre>
+        </div>
+        <div class="card card-optimized">
+          <div class="card-label">Optimized</div>
+          <pre>{{ABOUT_OPTIMIZED}}</pre>
+        </div>
+      </div>
+
+      <!-- Experience -->
+      <h3>Experience</h3>
+      {{EXPERIENCE_BLOCKS}}
+
+      <!-- Skills -->
+      <h3>Skills</h3>
+      <div class="rewrite-pair">
+        <div class="card card-current">
+          <div class="card-label">Current</div>
+          <pre>{{SKILLS_CURRENT}}</pre>
+        </div>
+        <div class="card card-optimized">
+          <div class="card-label">Optimized</div>
+          <pre>{{SKILLS_OPTIMIZED}}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑥  TARGET KEYWORDS -->
+    <section>
+      <h2>Target Keywords</h2>
+      <p>Where each target keyword currently appears across the surfaces LinkedIn search reads, in priority order. ✅ present · ⬜ missing.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Keyword</th>
+            <th>Headline</th>
+            <th>About</th>
+            <th>Experience</th>
+            <th>Skills</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{KEYWORD_GAP_TABLE}}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ⑦  PROFILE INFRASTRUCTURE -->
+    <section>
+      <h2>Profile Infrastructure</h2>
+      <p>Profile-wide settings and assets a strong profile gets right — separate from section copy.</p>
+      <ul class="checklist">
+        {{PROFILE_INFRA_CHECKLIST}}
+      </ul>
+    </section>
+
+    <!-- ⑧  ACTION CHECKLIST -->
+    <section>
+      <h2>Action Checklist</h2>
+      <ul class="checklist">
+        {{ACTION_CHECKLIST}}
+      </ul>
+    </section>
+
+    <!-- ⑧  NOT ASSESSABLE -->
+    <section>
+      <h2>Not Assessable From Your Material</h2>
+      <div class="not-assessable">
+        {{NOT_ASSESSABLE_NOTICE}}
+      </div>
+    </section>
+
+    <div class="report-footer">
+      Generated by linkedin-profile-perfector &nbsp;·&nbsp; {{REPORT_DATE}}
+    </div>
+
+  </div><!-- /.container -->
+</body>
+</html>
